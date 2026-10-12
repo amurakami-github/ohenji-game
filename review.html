@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f4ed">
+  <title>全シーンの確認 — おへんじ</title>
+  <link rel="stylesheet" href="./review.css?v=1.17.0">
+</head>
+<body>
+  <header class="page-header">
+    <a class="back-link" href="./">← おへんじで遊ぶ</a>
+    <p class="eyebrow">おへんじ ／ 保護者用</p>
+    <h1>写真と、話すことば。</h1>
+    <p class="intro">全16シーンの質問・「目を見て」・両方の返事・結果を、順番に確認できます。<br>写真を押すと拡大。再生ボタンで、アプリと同じ声と動きを確認できます。</p>
+    <p class="voice-note">音声はご提供の録音です。録音を読み込めない場合は、端末の日本語読み上げで再生します。</p>
+    <nav id="sceneIndex" class="scene-index" aria-label="全シーンの目次"></nav>
+  </header>
+  <div class="review-toolbar">
+    <label for="sceneSelect">シーン</label><select id="sceneSelect"></select>
+    <button id="stopPlayback" type="button" disabled>■ 停止</button>
+    <p id="playbackStatus" role="status" aria-live="polite">確認したい写真や声を選んでください。</p>
+  </div>
+  <main id="scenes"></main>
+  <footer>① 母の質問 → ② 目を見て → ③ 慧樹の返事 → ④ 母の返答</footer>
+  <dialog id="photoDialog" aria-labelledby="dialogTitle">
+    <div class="dialog-header"><h2 id="dialogTitle"></h2><button id="closeDialog" type="button" aria-label="拡大写真を閉じる">×</button></div>
+    <div id="dialogPhoto"></div>
+  </dialog>
+  <script type="module" src="./review.js?v=1.18.0"></script>
+</body>
+</html>

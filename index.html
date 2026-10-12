@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f2eb">
+  <meta name="description" content="身近な写真を見て、自分の気持ちを二つの返事から選ぶアプリ。">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="おへんじ">
+  <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./assets/icon-192.png">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <title>おへんじ</title>
+</head>
+<body>
+  <svg class="svg-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="icon-sound" viewBox="0 0 24 24"><path d="M11 4 5.5 8.5H2v7h3.5L11 20V4ZM15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
+    <symbol id="yes-face" viewBox="0 0 100 100">
+      <g stroke="#37312b" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+        <path fill="#f5a8ac" d="M25 99v-8c0-10 13-16 25-16s25 6 25 16v8"/>
+        <path fill="#ffdbb2" d="M42 78v8c4 5 12 5 16 0v-8"/>
+        <path fill="#ffdbb2" d="M19 47c-12-5-17 13-5 19l8 1m59-20c12-5 17 13 5 19l-8 1"/>
+        <path fill="#ffdbb2" d="M18 41c0-22 14-31 32-31s32 9 32 31v20c0 17-15 26-32 26S18 78 18 61Z"/>
+        <path fill="#333331" d="M17 49C9 35 13 19 28 11 39 3 56 3 65 9c16 3 27 22 19 40l-6-8c0-7-3-11-7-14-1 8-5 12-12 11 3-4 3-7 2-10-4 7-9 10-16 9 3-3 4-6 3-10-3 8-9 12-16 12 3-3 4-6 3-9-2 7-7 11-13 12l-1 7Z"/>
+        <path fill="none" stroke-width="1.8" d="M14 54q-5-2-3 5m75-5q5-2 3 5"/>
+        <ellipse fill="#f7a3a0" stroke="none" cx="29" cy="66" rx="6.5" ry="4"/>
+        <ellipse fill="#f7a3a0" stroke="none" cx="71" cy="66" rx="6.5" ry="4"/>
+        <path fill="none" stroke-width="1.9" d="m50 60-1 3 2 1"/>
+        <path fill="none" d="M29 56q6-9 12 0m18 0q6-9 12 0"/>
+        <path fill="#9a4d43" d="M38 69q12 5 24 0c-1 15-21 15-24 0Z"/>
+        <path fill="#f58c8c" stroke="none" d="M43 77q7-5 14 0c-4 4-10 4-14 0Z"/>
+      </g>
+    </symbol>
+    <symbol id="no-face" viewBox="0 0 100 100">
+      <g stroke="#37312b" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+        <path fill="#f5a8ac" d="M25 99v-8c0-10 13-16 25-16s25 6 25 16v8"/>
+        <path fill="#ffdbb2" d="M42 78v8c4 5 12 5 16 0v-8"/>
+        <path fill="#ffdbb2" d="M19 47c-12-5-17 13-5 19l8 1m59-20c12-5 17 13 5 19l-8 1"/>
+        <path fill="#ffdbb2" d="M18 41c0-22 14-31 32-31s32 9 32 31v20c0 17-15 26-32 26S18 78 18 61Z"/>
+        <path fill="#333331" d="M17 49C9 35 13 19 28 11 39 3 56 3 65 9c16 3 27 22 19 40l-6-8c0-7-3-11-7-14-1 8-5 12-12 11 3-4 3-7 2-10-4 7-9 10-16 9 3-3 4-6 3-10-3 8-9 12-16 12 3-3 4-6 3-9-2 7-7 11-13 12l-1 7Z"/>
+        <path fill="none" stroke-width="1.8" d="M14 54q-5-2-3 5m75-5q5-2 3 5"/>
+        <ellipse fill="#f7a3a0" stroke="none" cx="29" cy="66" rx="6.5" ry="4"/>
+        <ellipse fill="#f7a3a0" stroke="none" cx="71" cy="66" rx="6.5" ry="4"/>
+        <path fill="none" stroke-width="1.9" d="m50 60-1 3 2 1"/>
+        <path fill="none" stroke-width="2.5" d="m29 47 11 3m20 0 11-3"/>
+        <path fill="none" d="m30 54 9 4-8 4m39-8-9 4 8 4"/>
+        <path fill="none" d="M39 75q11-10 22 0"/>
+      </g>
+    </symbol>
+    <symbol id="gesture-up-down" viewBox="0 0 24 64"><path d="M12 5v54M4 13l8-8 8 8M4 51l8 8 8-8"/></symbol>
+    <symbol id="gesture-side-side" viewBox="0 0 64 24"><path d="M5 12h54M13 4l-8 8 8 8M51 4l8 8-8 8"/></symbol>
+  </defs></svg>
+  <main id="game" class="app-shell" aria-labelledby="questionTitle">
+    <h1 id="questionTitle" class="visually-hidden" tabindex="-1"></h1>
+    <figure class="photo-card">
+      <div id="scenePhoto" class="scene-photo" role="img"><canvas id="headMotion" class="head-motion" aria-hidden="true" hidden></canvas></div>
+      <span id="speakingIndicator" class="speaking-indicator" aria-label="よみあげ中" hidden><svg class="icon" aria-hidden="true"><use href="#icon-sound"/></svg></span>
+      <span id="photoFallback" class="photo-fallback" hidden>しゃしんを よみこめませんでした</span>
+    </figure>
+    <section class="reply-area" aria-labelledby="questionTitle">
+      <div class="answer-grid" role="group" aria-label="おへんじを選ぶ">
+        <button id="answerYes" class="answer-card yes" aria-pressed="false">
+          <span class="gesture-art" aria-hidden="true"><svg class="face"><use href="#yes-face"/></svg><svg class="gesture-direction vertical"><use href="#gesture-up-down"/></svg></span>
+          <strong class="answer-cue">うん</strong><span id="yesWord" class="answer-word"></span>
+        </button>
+        <button id="answerNo" class="answer-card no" aria-pressed="false">
+          <span class="gesture-art" aria-hidden="true"><svg class="face"><use href="#no-face"/></svg><svg class="gesture-direction horizontal"><use href="#gesture-side-side"/></svg></span>
+          <strong class="answer-cue">ううん</strong><span id="noWord" class="answer-word"></span>
+        </button>
+      </div>
+    </section>
+    <p id="replyStatus" class="visually-hidden" role="status" aria-live="polite"></p>
+  </main>
+  <div id="startOverlay" class="start-overlay" role="dialog" aria-modal="true" aria-label="はじめる" hidden>
+    <div class="start-content">
+      <p id="audioFailure" class="audio-failure" hidden>おとが でませんでした</p>
+      <button id="startButton" class="start-button"><span aria-hidden="true">▶</span><span id="startLabel">はじめる</span></button>
+      <button id="continueSilent" class="silent-button" hidden>おとなしで つづける</button>
+    </div>
+  </div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
