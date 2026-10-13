@@ -1,4 +1,5 @@
-const CACHE_NAME = 'ohenji-v1.18.0';
+const CACHE_NAME = 'ohenji-v1.19.0';
+// v1.19: start on a question; prepare recordings before choosing the attention cue.
 const BASE = new URL('./', self.location.href);
 const urls = [
   './', './index.html', './styles.css', './app.js', './data.js', './audio.js', './sequence.js', './session.js', './reply-motion.js', './manifest.webmanifest',

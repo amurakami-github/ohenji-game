@@ -33,7 +33,7 @@ function stagesFor(scene) {
     return { scene, phase, answer, title, view, speech };
   };
   return [stage('question', null, '① お母さんの質問'),
-    stage('attention', null, '② 目を見て'),
+    stage('attention', null, '② ボタンを選んだ後 · 目を見て'),
     stage('child', 'yes', '③ 慧樹の返事 · うん'), stage('parent', 'yes', '④ お母さんの返答 · うんの後'),
     stage('child', 'no', '③ 慧樹の返事 · ううん'), stage('parent', 'no', '④ お母さんの返答 · ううんの後')];
 }

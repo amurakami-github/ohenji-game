@@ -184,14 +184,14 @@ export function reduceState(state, action) {
     case 'open':
       return SCENES.some(scene => scene.id === action.id)
         ? { screen: 'scene', sceneId: action.id, answer: null, phase: 'question' } : state;
-    case 'attention':
-      return state.screen === 'scene' && state.phase === 'question' && state.answer === null
-        ? { ...state, phase: 'attention' } : state;
     case 'answer':
-      return state.screen === 'scene' && ['yes', 'no'].includes(action.value)
-        ? { ...state, answer: action.value, phase: 'child' } : state;
+      return state.screen === 'scene' && state.phase === 'question' && state.answer === null && ['yes', 'no'].includes(action.value)
+        ? { ...state, answer: action.value, phase: 'attention' } : state;
+    case 'child':
+      return state.screen === 'scene' && state.phase === 'attention' && state.answer
+        ? { ...state, phase: 'child' } : state;
     case 'parent':
-      return state.screen === 'scene' && state.answer
+      return state.screen === 'scene' && state.phase === 'child' && state.answer
         ? { ...state, phase: 'parent' } : state;
     case 'reset': return { ...state, answer: null, phase: 'question' };
     case 'home': return initialState();

@@ -1,4 +1,4 @@
-import { initialState, reduceState, presentation, photoStyle } from './data.js';
+import { ATTENTION_CUE, initialState, reduceState, presentation, photoStyle } from './data.js';
 import { Voice } from './audio.js';
 import { AutoAdvance } from './sequence.js';
 import { Session } from './session.js';
@@ -11,11 +11,16 @@ let photoGeneration = 0;
 let playbackGeneration = 0;
 let photoReady = Promise.resolve();
 let pendingPlayback = null;
-let attentionReady = false;
+let questionStarted = false;
+let questionFinished = false;
+let recordingsReady = false;
+let silentTimer = null;
+const images = new Map();
+const SILENT_CUE_MS = 1000;
 const session = new Session({ firstScene: new URLSearchParams(location.search).get('scene') });
 const advance = new AutoAdvance({
   onAdvance: () => openScene(session.next()),
-  allowed: () => state.phase === 'parent' && state.answer !== null && !document.hidden && $('startOverlay').hidden,
+  allowed: () => state.phase === 'parent' && state.answer !== null && !document.hidden,
 });
 const voice = new Voice({
   onPlayback: event => {
@@ -23,25 +28,20 @@ const voice = new Voice({
     const playing = event.state === 'playing' && (
       (state.phase === 'question' && event.key === `question-${state.sceneId}`)
       || (state.phase === 'attention' && event.key === view?.responseAudio));
+    if (playing && state.phase === 'question') questionStarted = true;
     $('scenePhoto').dataset.playing = String(playing);
     $('speakingIndicator').hidden = !playing;
   },
 });
-
-function showStart(show, failed = false) {
-  $('startOverlay').hidden = !show;
-  $('game').inert = show;
+voice.ready.then(() => {
+  // The first answer tap must reach the recorded cue's media element, instead
+  // of unlocking only speech synthesis while its recording list is loading.
+  recordingsReady = true;
   updateAnswerAvailability();
-  if (show) {
-    $('startLabel').textContent = failed ? 'もういちど' : 'はじめる';
-    $('audioFailure').hidden = !failed;
-    $('continueSilent').hidden = !failed;
-    $('startButton').focus({ preventScroll: true });
-  }
-}
+});
+
 function canAnswer() {
-  return !document.hidden && $('startOverlay').hidden
-    && (state.phase === 'child' || state.phase === 'parent' || (state.phase === 'attention' && attentionReady));
+  return recordingsReady && !document.hidden && state.phase === 'question' && state.answer === null;
 }
 function updateAnswerAvailability() {
   const disabled = !canAnswer();
@@ -52,10 +52,23 @@ function cancelPlayback() {
   playbackGeneration += 1;
   pendingPlayback = null;
   advance.cancel();
+  clearTimeout(silentTimer);
+  silentTimer = null;
   voice.stop();
   motion.stop();
-  attentionReady = false;
   updateAnswerAvailability();
+}
+function loadImage(source) {
+  if (!images.has(source)) {
+    const asset = { image: new Image(), loaded: false, failed: false };
+    asset.ready = new Promise(resolve => {
+      asset.image.onload = () => { asset.loaded = true; resolve(asset); };
+      asset.image.onerror = () => { asset.failed = true; images.delete(source); resolve(asset); };
+    });
+    images.set(source, asset);
+    asset.image.src = source;
+  }
+  return images.get(source);
 }
 function dispatch(action) {
   state = reduceState(state, action);
@@ -97,33 +110,24 @@ function render() {
     $('photoFallback').hidden = true;
     photo.classList.add('loading');
     const generation = ++photoGeneration;
-    photoReady = new Promise(resolve => {
-      const image = new Image();
-      image.onload = () => {
-        if (generation === photoGeneration) {
-          photo.classList.remove('loading');
-          if (state.phase === 'question' || state.phase === 'child') motion.setPhoto(image, view.scene.id, view.replyFrames);
-        }
-        resolve();
-      };
-      image.onerror = () => {
-        if (generation === photoGeneration) {
-          photo.classList.remove('loading');
-          $('photoFallback').hidden = false;
-        }
-        resolve();
-      };
-      image.src = view.image;
-    });
+    const asset = loadImage(view.image);
+    const loaded = () => {
+      if (generation !== photoGeneration) return;
+      photo.classList.remove('loading');
+      $('photoFallback').hidden = !asset.failed;
+      if (asset.loaded && (state.phase === 'question' || state.phase === 'child')) {
+        motion.setPhoto(asset.image, view.scene.id, view.replyFrames);
+      }
+    };
+    if (asset.loaded || asset.failed) {
+      loaded();
+      photoReady = Promise.resolve();
+    } else photoReady = asset.ready.then(loaded);
   }
 }
 
 function continueAfterSpeech(next, gesture = Promise.resolve()) {
-  if (next === 'attention') showAttention();
-  else if (next === 'answer' && state.phase === 'attention' && !state.answer && !document.hidden) {
-    attentionReady = true;
-    updateAnswerAvailability();
-  }
+  if (next === 'child') afterPhotoPaint(showChild);
   else if (next === 'parent') {
     const generation = playbackGeneration;
     gesture.then(() => {
@@ -135,50 +139,63 @@ function continueAfterSpeech(next, gesture = Promise.resolve()) {
 function play(items, next = null) {
   const generation = ++playbackGeneration;
   advance.cancel();
-  pendingPlayback = { items, next };
+  pendingPlayback = { items, next, retry: false };
   const gesture = next === 'parent' ? motion.play(state.answer) : Promise.resolve();
-  // This call stays synchronous when reached from the initial start tap.
+  // A reply tap starts the cue here, before any await can lose user activation.
   const completion = voice.speak(items);
   completion.then(result => {
     if (generation !== playbackGeneration || document.hidden) return;
     if (result.status === 'blocked') {
       motion.stop();
-      showStart(true);
+      pendingPlayback.retry = true;
       return;
     }
     if (['unavailable', 'cancelled'].includes(result.status)) {
-      motion.stop();
-      showStart(true, true);
+      if (state.phase === 'question') {
+        pendingPlayback.retry = true;
+        return;
+      }
+      pendingPlayback = null;
+      if (next === 'parent') continueAfterSpeech(next, gesture);
+      else {
+        silentTimer = setTimeout(() => {
+          silentTimer = null;
+          if (generation === playbackGeneration && !document.hidden) continueAfterSpeech(next, gesture);
+        }, SILENT_CUE_MS);
+      }
       return;
     }
     pendingPlayback = null;
+    if (state.phase === 'question') questionFinished = true;
     continueAfterSpeech(next, gesture);
   });
 }
 function askQuestion() {
   const scene = presentation(state).scene;
-  play([{ key: `question-${scene.id}`, text: `けいじゅ、${scene.question}` }], 'attention');
+  play([{ key: `question-${scene.id}`, text: `けいじゅ、${scene.question}` }]);
 }
-async function playAfterPhoto(items, next = null) {
+async function afterPhotoPaint(callback, { speechReady = false, motionReady = false } = {}) {
   const generation = playbackGeneration;
   const sceneId = state.sceneId;
   const phase = state.phase;
-  await Promise.all([photoReady, voice.ready]);
-  if (next === 'parent') await motion.ready();
+  await Promise.all([photoReady, speechReady ? voice.ready : Promise.resolve()]);
+  if (motionReady) await motion.ready();
   // Let this phase's picture paint before beginning its speech.
   await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   if (generation !== playbackGeneration || state.sceneId !== sceneId || state.phase !== phase || document.hidden) return;
-  play(items, next);
+  callback();
+}
+function playAfterPhoto(items, next = null) {
+  afterPhotoPaint(() => play(items, next), { speechReady: true, motionReady: next === 'parent' });
 }
 function askAfterPhoto() {
   const scene = presentation(state).scene;
-  playAfterPhoto([{ key: `question-${scene.id}`, text: `けいじゅ、${scene.question}` }], 'attention');
+  playAfterPhoto([{ key: `question-${scene.id}`, text: `けいじゅ、${scene.question}` }]);
 }
-function showAttention() {
-  attentionReady = false;
-  dispatch({ type: 'attention' });
+function showChild() {
+  dispatch({ type: 'child' });
   const view = presentation(state);
-  playAfterPhoto([{ key: view.responseAudio, text: view.caption }], 'answer');
+  playAfterPhoto([{ key: view.scene[`${state.answer}Audio`], text: view.reply }], 'parent');
 }
 function showParent() {
   dispatch({ type: 'parent' });
@@ -187,7 +204,8 @@ function showParent() {
 }
 function openScene(id) {
   cancelPlayback();
-  showStart(false);
+  questionStarted = false;
+  questionFinished = false;
   dispatch({ type: 'open', id });
   $('questionTitle').focus({ preventScroll: true });
   askAfterPhoto();
@@ -197,39 +215,32 @@ function answer(value) {
   cancelPlayback();
   dispatch({ type: 'answer', value });
   const view = presentation(state);
-  const items = [
-    { key: value === 'yes' ? view.scene.yesAudio : view.scene.noAudio, text: view.reply },
-  ];
-  playAfterPhoto(items, 'parent');
+  // The cue image is preloaded while the question is on screen. Display it
+  // immediately and play synchronously in this actual answer-button click.
+  play([{ key: view.responseAudio, text: view.caption }], 'child');
 }
 
 $('answerYes').addEventListener('click', () => answer('yes'));
 $('answerNo').addEventListener('click', () => answer('no'));
-$('startButton').addEventListener('click', () => {
+document.addEventListener('click', event => {
+  if (!recordingsReady || !event.isTrusted || document.hidden || event.target.closest?.('#answerYes, #answerNo')) return;
   const pending = pendingPlayback;
-  showStart(false);
-  if (pending) play(pending.items, pending.next);
-  else if (state.phase === 'attention') {
-    const view = presentation(state);
-    play([{ key: view.responseAudio, text: view.caption }], 'answer');
+  if (pending?.retry) play(pending.items, pending.next);
+  else if (canAnswer() && !questionStarted && !questionFinished) {
+    cancelPlayback();
+    askQuestion();
   }
-  else askQuestion();
-  $('questionTitle').focus({ preventScroll: true });
-});
-$('continueSilent').addEventListener('click', () => {
-  const next = pendingPlayback?.next;
-  cancelPlayback();
-  showStart(false);
-  continueAfterSpeech(next, next === 'parent' ? motion.play(state.answer) : Promise.resolve());
-  $('questionTitle').focus({ preventScroll: true });
 });
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) cancelPlayback();
   else {
-    showStart(false);
+    updateAnswerAvailability();
     if (state.phase === 'parent') showParent();
-    else if (state.answer) answer(state.answer);
-    else if (state.phase === 'attention') showAttention();
+    else if (state.phase === 'child') showChild();
+    else if (state.phase === 'attention') {
+      const view = presentation(state);
+      playAfterPhoto([{ key: view.responseAudio, text: view.caption }], 'child');
+    }
     else askAfterPhoto();
   }
 });
@@ -242,6 +253,8 @@ if (typeof ResizeObserver === 'function') {
   window.addEventListener('resize', () => updatePhotoCrop());
 }
 
+// Start fetching the cue before the first question. No start screen is needed.
+loadImage(ATTENTION_CUE.image);
 openScene(session.next());
 
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {

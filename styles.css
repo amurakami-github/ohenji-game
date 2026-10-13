@@ -55,18 +55,12 @@ h1, p, figure { margin: 0; }
 .reply-area { min-width: 0; min-height: 0; width: min(100%, max(560px, var(--photo-width))); height: var(--reply-height); flex: 0 0 auto; display: grid; }
 h1:focus { outline: none; }
 .speaking-indicator { position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; background: #fffef9e8; color: var(--teal); pointer-events: none; }
-.start-overlay { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: #f5f2ebe8; backdrop-filter: blur(10px); }
-.start-button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; width: 190px; height: 190px; border: 0; border-radius: 50%; background: var(--teal); color: #fffefa; font-size: 25px; font-weight: 750; box-shadow: 0 6px 0 #274d47; }
-.start-button span[aria-hidden] { font-size: 42px; line-height: 1; margin-left: 7px; }
-.start-content { display: flex; flex-direction: column; align-items: center; gap: 24px; }
-.audio-failure { font-size: 18px; }
-.silent-button { padding: 12px; border: 0; background: transparent; color: var(--muted); font-size: 15px; }
 .icon { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .answer-grid { min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(12px, 1.6vw, 22px); padding-bottom: 5px; }
 .answer-card { min-width: 0; min-height: 0; border: 4px solid #408367; border-radius: 22px; padding: 8px 12px; display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; align-content: center; align-items: center; justify-content: center; column-gap: clamp(12px, 2vw, 24px); row-gap: 0; background: #e9f3df; box-shadow: 0 5px 0 #27674e; }
 .answer-card.no { border-color: #8b71a6; background: #f1eafa; color: #493b60; box-shadow: 0 5px 0 #63507b; }
 .answer-card:disabled { cursor: default; opacity: .45; }
-.answer-card[aria-pressed="true"] { background: #d6e9c5; border-color: #255e45; box-shadow: 0 2px 0 #27674e; transform: translateY(3px); }
+.answer-card[aria-pressed="true"] { opacity: 1; background: #d6e9c5; border-color: #255e45; box-shadow: 0 2px 0 #27674e; transform: translateY(3px); }
 .answer-card.no[aria-pressed="true"] { background: #e2d5ee; border-color: #59436f; box-shadow: 0 2px 0 #63507b; }
 .answer-word { grid-column: 2; grid-row: 2; align-self: start; font-size: clamp(21px, 2.5vw, 28px); line-height: 1.4; font-weight: 650; white-space: nowrap; }
 .answer-cue { grid-column: 2; grid-row: 1; align-self: end; font-size: clamp(38px, 4.6vw, 56px); line-height: 1.15; font-weight: 850; letter-spacing: .04em; }
